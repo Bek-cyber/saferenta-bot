@@ -8,6 +8,7 @@ import logging
 import os
 import docx2txt
 import fitz  # PyMuPDF
+import openai
 
 # Загрузка переменных из .env
 load_dotenv()
@@ -15,15 +16,19 @@ load_dotenv()
 # Логирование
 logging.basicConfig(level=logging.INFO)
 
-# Токен бота из переменной окружения
+# Токены
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 if not BOT_TOKEN:
     raise ValueError("Не указан BOT_TOKEN в переменных окружениях")
+if not OPENAI_API_KEY:
+    raise ValueError("Не указан OPENAI_API_KEY в переменных окружениях")
 
 # Инициализация
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
+openai.api_key = OPENAI_API_KEY
 
 # /start
 @dp.message(CommandStart())
@@ -93,11 +98,21 @@ async def handle_document(message: Message):
         await message.answer("❌ Неподдерживаемый формат файла. Пожалуйста, загрузите PDF или DOCX.")
         return
 
-    # Обрезаем, если слишком длинный (Telegram лимит на сообщение — 4096 символов)
-    preview = extracted_text.strip()[:3000] + "..." if len(extracted_text) > 3000 else extracted_text.strip()
+    await message.answer("📡 Отправляем текст на анализ через OpenAI...")
 
-    await message.answer("📄 Текст успешно извлечён. Вот предварительный фрагмент:\n\n" + preview)
-    await message.answer("✍️ В следующем этапе мы отправим этот текст на анализ через OpenAI.")
+    try:
+        completion = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "Ты юридический помощник. Проведи анализ текста договора аренды, укажи возможные риски, ошибки и предложи рекомендации по улучшению."},
+                {"role": "user", "content": extracted_text[:4000]}
+            ]
+        )
+        result = completion.choices[0].message.content
+        await message.answer("🧾 Результат анализа:\n\n" + result[:4000])
+    except Exception as e:
+        logging.error(f"Ошибка OpenAI: {e}")
+        await message.answer("❌ Произошла ошибка при анализе договора. Попробуйте позже.")
 
 # Запуск
 async def main():

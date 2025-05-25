@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 import asyncio
 import logging
 import os
+import docx2txt
+import fitz  # PyMuPDF
 
 # Загрузка переменных из .env
 load_dotenv()
@@ -78,10 +80,24 @@ async def handle_document(message: Message):
     with open(file_path, "wb") as f:
         f.write(file.read())
 
-    await message.answer("✅ Файл получен. Идёт предварительная проверка договора...")
+    await message.answer("✅ Файл получен. Извлекаем текст договора...")
 
-    # 🔧 Заглушка: вместо реального анализа
-    await message.answer("📄 Анализ завершён. В будущем здесь появится PDF-отчёт с рекомендациями.")
+    extracted_text = ""
+    if file_path.lower().endswith(".docx"):
+        extracted_text = docx2txt.process(file_path)
+    elif file_path.lower().endswith(".pdf"):
+        with fitz.open(file_path) as doc:
+            for page in doc:
+                extracted_text += page.get_text()
+    else:
+        await message.answer("❌ Неподдерживаемый формат файла. Пожалуйста, загрузите PDF или DOCX.")
+        return
+
+    # Обрезаем, если слишком длинный (Telegram лимит на сообщение — 4096 символов)
+    preview = extracted_text.strip()[:3000] + "..." if len(extracted_text) > 3000 else extracted_text.strip()
+
+    await message.answer("📄 Текст успешно извлечён. Вот предварительный фрагмент:\n\n" + preview)
+    await message.answer("✍️ В следующем этапе мы отправим этот текст на анализ через OpenAI.")
 
 # Запуск
 async def main():

@@ -9,6 +9,7 @@ import os
 import docx2txt
 import fitz  # PyMuPDF
 import openai
+from fpdf import FPDF
 
 # Загрузка переменных из .env
 load_dotenv()
@@ -109,7 +110,19 @@ async def handle_document(message: Message):
             ]
         )
         result = completion.choices[0].message.content
-        await message.answer("🧾 Результат анализа:\n\n" + result[:4000])
+
+        # Генерация PDF-отчёта
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_auto_page_break(auto=True, margin=15)
+        pdf.set_font("Arial", size=12)
+        for line in result.split("\n"):
+            pdf.multi_cell(0, 10, line)
+        pdf_path = file_path + "_analysis.pdf"
+        pdf.output(pdf_path)
+
+        await message.answer_document(FSInputFile(pdf_path), caption="📎 Ваш PDF-отчёт готов")
+
     except Exception as e:
         logging.error(f"Ошибка OpenAI: {e}")
         await message.answer("❌ Произошла ошибка при анализе договора. Попробуйте позже.")

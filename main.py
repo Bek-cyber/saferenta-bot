@@ -17,7 +17,7 @@ logging.basicConfig(level=logging.INFO)
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 if not BOT_TOKEN:
-    raise ValueError("Не указан BOT_TOKEN в переменных окружения")
+    raise ValueError("Не указан BOT_TOKEN в переменных окружениях")
 
 # Инициализация
 bot = Bot(token=BOT_TOKEN)
@@ -86,6 +86,14 @@ async def handle_document(message: Message):
 # Запуск
 async def main():
     os.makedirs("temp", exist_ok=True)
+
+    try:
+        me = await bot.get_me()
+        logging.info(f"🤖 Бот запущен: @{me.username}")
+    except Exception as e:
+        logging.error(f"❌ Не удалось подключиться к Telegram API: {e}")
+        return
+
     await dp.start_polling(bot)
 
 if __name__ == "__main__":

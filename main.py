@@ -8,7 +8,6 @@ import logging
 import os
 import docx2txt
 import fitz  # PyMuPDF
-import openai
 from fpdf import FPDF
 
 # Загрузка переменных из .env
@@ -17,19 +16,15 @@ load_dotenv()
 # Логирование
 logging.basicConfig(level=logging.INFO)
 
-# Токены
+# Токен
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 if not BOT_TOKEN:
     raise ValueError("Не указан BOT_TOKEN в переменных окружениях")
-if not OPENAI_API_KEY:
-    raise ValueError("Не указан OPENAI_API_KEY в переменных окружениях")
 
 # Инициализация
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
-openai.api_key = OPENAI_API_KEY
 
 # /start
 @dp.message(CommandStart())
@@ -99,33 +94,27 @@ async def handle_document(message: Message):
         await message.answer("❌ Неподдерживаемый формат файла. Пожалуйста, загрузите PDF или DOCX.")
         return
 
-    await message.answer("📡 Отправляем текст на анализ через OpenAI...")
+    await message.answer("📡 Выполняется тестовый анализ договора (mock)...")
 
-    try:
-        completion = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "Ты юридический помощник. Проведи анализ текста договора аренды, укажи возможные риски, ошибки и предложи рекомендации по улучшению."},
-                {"role": "user", "content": extracted_text[:4000]}
-            ]
-        )
-        result = completion.choices[0].message.content
+    result = (
+        "🔍 Анализ договора (тестовый режим):\n\n"
+        "— Не указана ответственность сторон при порче имущества.\n"
+        "— Нет пункта о сроках возврата залога.\n"
+        "— Рекомендуется добавить раздел об оплате коммунальных услуг.\n\n"
+        "✅ Общая структура договора корректна, но требует уточнений."
+    )
 
-        # Генерация PDF-отчёта
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_auto_page_break(auto=True, margin=15)
-        pdf.set_font("Arial", size=12)
-        for line in result.split("\n"):
-            pdf.multi_cell(0, 10, line)
-        pdf_path = file_path + "_analysis.pdf"
-        pdf.output(pdf_path)
+    # Генерация PDF-отчёта
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.set_font("Arial", size=12)
+    for line in result.split("\n"):
+        pdf.multi_cell(0, 10, line)
+    pdf_path = file_path + "_analysis.pdf"
+    pdf.output(pdf_path)
 
-        await message.answer_document(FSInputFile(pdf_path), caption="📎 Ваш PDF-отчёт готов")
-
-    except Exception as e:
-        logging.error(f"Ошибка OpenAI: {e}")
-        await message.answer("❌ Произошла ошибка при анализе договора. Попробуйте позже.")
+    await message.answer_document(FSInputFile(pdf_path), caption="📎 Ваш PDF-отчёт готов")
 
 # Запуск
 async def main():

@@ -8,6 +8,7 @@ import logging
 import os
 import docx2txt
 import fitz  # PyMuPDF
+import requests
 from fpdf import FPDF
 
 # Загрузка переменных из .env
@@ -16,11 +17,14 @@ load_dotenv()
 # Логирование
 logging.basicConfig(level=logging.INFO)
 
-# Токен
+# Токены
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 
 if not BOT_TOKEN:
     raise ValueError("Не указан BOT_TOKEN в переменных окружениях")
+if not DEEPSEEK_API_KEY:
+    raise ValueError("Не указан DEEPSEEK_API_KEY в переменных окружениях")
 
 # Инициализация
 bot = Bot(token=BOT_TOKEN)
@@ -44,6 +48,24 @@ main_keyboard = InlineKeyboardMarkup(inline_keyboard=[
 def load_text(filename: str) -> str:
     with open(os.path.join("texts", filename), encoding="utf-8") as f:
         return f.read()
+
+def analyze_with_deepseek(user_text: str) -> str:
+    url = "https://api.deepseek.com/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": "deepseek-chat",
+        "messages": [
+            {"role": "system", "content": "Ты юридический помощник. Проведи анализ текста договора аренды, укажи возможные риски, ошибки и предложи рекомендации по улучшению."},
+            {"role": "user", "content": user_text[:4000]}
+        ]
+    }
+    response = requests.post(url, json=payload, headers=headers)
+    response.raise_for_status()
+    data = response.json()
+    return data["choices"][0]["message"]["content"]
 
 @dp.callback_query(F.data == "about")
 async def button_about(callback: types.CallbackQuery):
@@ -122,30 +144,21 @@ async def handle_document(message: Message):
         await message.answer("❌ Неподдерживаемый формат файла. Пожалуйста, загрузите PDF или DOCX.")
         return
 
-    await message.answer("📡 Выполняется тестовый анализ договора (mock)...")
+    await message.answer("📡 Выполняется анализ договора через DeepSeek AI...")
 
-    result = (
-        "🔍 Анализ договора (тестовый режим):\n\n"
-        "— Не указана ответственность сторон при порче имущества.\n"
-        "— Нет пункта о сроках возврата залога.\n"
-        "— Рекомендуется добавить раздел об оплате коммунальных услуг.\n\n"
-        "✅ Общая структура договора корректна, но требует уточнений."
-    )
+    try:
+        result = analyze_with_deepseek(extracted_text)
+    except Exception as e:
+        logging.exception("Ошибка при обращении к DeepSeek")
+        await message.answer("❌ Ошибка при анализе через DeepSeek. Попробуйте позже.")
+        return
 
     # Генерация PDF-отчёта
     pdf = FPDF()
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
-
-    # Добавим поддержку шрифта DejaVu (Unicode)
-    font_path = os.path.join("fonts", "DejaVuSans.ttf")
-    if not os.path.isfile(font_path):
-        await message.answer("⚠️ Не найден шрифт DejaVuSans.ttf в папке /fonts. Пожалуйста, добавьте его для генерации PDF с emoji.")
-        return
-
-    pdf.add_font("DejaVu", style="", fname=font_path, uni=True)
+    pdf.add_font("DejaVu", style="", fname="fonts/DejaVuSans.ttf", uni=True)
     pdf.set_font("DejaVu", size=12)
-
     for line in result.split("\n"):
         pdf.multi_cell(100, 5, line)
     pdf_path = file_path + "_analysis.pdf"
@@ -158,6 +171,7 @@ async def handle_document(message: Message):
 async def main():
     os.makedirs("temp", exist_ok=True)
     os.makedirs("texts", exist_ok=True)
+    os.makedirs("fonts", exist_ok=True)
 
     try:
         me = await bot.get_me()

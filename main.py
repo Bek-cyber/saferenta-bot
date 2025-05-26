@@ -28,8 +28,13 @@ dp = Dispatcher()
 
 # Главное меню с кнопками
 main_keyboard = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text="🚀 Проверка", callback_data="check")],
-    [InlineKeyboardButton(text="👨‍⚖️ Юрист", callback_data="lawyer")]
+    [
+        InlineKeyboardButton(text="🚀 Проверка", callback_data="check"),
+        InlineKeyboardButton(text="👨‍⚖️ Юрист", callback_data="lawyer")
+    ],
+    [
+        InlineKeyboardButton(text="📜 Правила", callback_data="rules")
+    ]
 ])
 
 # /start
@@ -39,7 +44,8 @@ async def cmd_start(message: Message):
         "👋 Добро пожаловать в SafeRenta — Telegram-бот для проверки договоров аренды!\n\n"
         "Здесь вы можете:\n"
         "— Загрузить договор и получить автоматический анализ\n"
-        "— Получить рекомендации по улучшению условий\n\n"
+        "— Получить рекомендации по улучшению условий\n"
+        "— Ознакомиться с юридическим статусом сервиса\n\n"
         "Выберите действие:",
         reply_markup=main_keyboard
     )
@@ -56,6 +62,11 @@ async def button_check(callback: types.CallbackQuery):
 @dp.callback_query(F.data == "lawyer")
 async def button_lawyer(callback: types.CallbackQuery):
     await cmd_lawyer(callback.message)
+    await callback.answer()
+
+@dp.callback_query(F.data == "rules")
+async def button_rules(callback: types.CallbackQuery):
+    await cmd_legal(callback.message)
     await callback.answer()
 
 # /юрист

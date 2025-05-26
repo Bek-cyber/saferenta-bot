@@ -1,5 +1,5 @@
 from aiogram import Bot, Dispatcher, types
-from aiogram.types import Message, FSInputFile
+from aiogram.types import Message, FSInputFile, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import CommandStart, Command
 from aiogram import F
 from dotenv import load_dotenv
@@ -26,6 +26,12 @@ if not BOT_TOKEN:
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
+# Главное меню с кнопками
+main_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text="🚀 Проверка", callback_data="check")],
+    [InlineKeyboardButton(text="👨‍⚖️ Юрист", callback_data="lawyer")]
+])
+
 # /start
 @dp.message(CommandStart())
 async def cmd_start(message: Message):
@@ -34,8 +40,23 @@ async def cmd_start(message: Message):
         "Здесь вы можете:\n"
         "— Загрузить договор и получить автоматический анализ\n"
         "— Получить рекомендации по улучшению условий\n\n"
-        "🔎 Введите /проверка для начала или /юрист, чтобы обратиться к специалисту."
+        "Выберите действие:",
+        reply_markup=main_keyboard
     )
+
+# Обработка нажатий на кнопки
+@dp.callback_query(F.data == "check")
+async def button_check(callback: types.CallbackQuery):
+    await callback.message.answer(
+        "📤 Пожалуйста, загрузите ваш договор аренды в формате PDF или DOCX.\n"
+        "После загрузки начнётся автоматическая проверка."
+    )
+    await callback.answer()
+
+@dp.callback_query(F.data == "lawyer")
+async def button_lawyer(callback: types.CallbackQuery):
+    await cmd_lawyer(callback.message)
+    await callback.answer()
 
 # /юрист
 @dp.message(Command("юрист"))
@@ -60,14 +81,6 @@ async def cmd_legal(message: Message):
         "Все рекомендации носят ознакомительный характер и не являются юридической консультацией.\n\n"
         "Разработчики не несут ответственности за действия пользователей, предпринятые на основании анализа.\n"
         "Рекомендуется обратиться к квалифицированному юристу перед подписанием договора."
-    )
-
-# /проверка — начало процесса загрузки договора
-@dp.message(Command("проверка"))
-async def cmd_check(message: Message):
-    await message.answer(
-        "📤 Пожалуйста, загрузите ваш договор аренды в формате PDF или DOCX.\n"
-        "После загрузки начнётся автоматическая проверка."
     )
 
 # Обработка загруженного файла

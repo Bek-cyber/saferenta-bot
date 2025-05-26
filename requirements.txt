@@ -1,1 +1,7 @@
 aiogram==3.3.0
+fpdf2
+python-docx
+docx2txt
+pymupdf
+requests
+python-dotenv

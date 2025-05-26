@@ -136,9 +136,18 @@ async def handle_document(message: Message):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.set_font("helvetica", size=12)
+
+    # Добавим поддержку шрифта DejaVu (Unicode)
+    font_path = os.path.join("fonts", "DejaVuSans.ttf")
+    if not os.path.isfile(font_path):
+        await message.answer("⚠️ Не найден шрифт DejaVuSans.ttf в папке /fonts. Пожалуйста, добавьте его для генерации PDF с emoji.")
+        return
+
+    pdf.add_font("DejaVu", style="", fname=font_path, uni=True)
+    pdf.set_font("DejaVu", size=12)
+
     for line in result.split("\n"):
-        pdf.multi_cell(0, 10, line)
+        pdf.multi_cell(100, 5, line)
     pdf_path = file_path + "_analysis.pdf"
     pdf.output(pdf_path)
 

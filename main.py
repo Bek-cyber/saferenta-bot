@@ -34,9 +34,35 @@ main_keyboard = InlineKeyboardMarkup(inline_keyboard=[
     ],
     [
         InlineKeyboardButton(text="📜 Правила", callback_data="rules"),
+        InlineKeyboardButton(text="ℹ️ О проекте", callback_data="about")
+    ],
+    [
         InlineKeyboardButton(text="🏠 Главное меню", callback_data="start")
     ]
 ])
+
+@dp.callback_query(F.data == "about")
+async def button_about(callback: types.CallbackQuery):
+    await callback.message.answer(
+        "ℹ️ О проекте SafeRenta
+
+"
+        "SafeRenta — это цифровой помощник, созданный для арендаторов жилья в России.
+"
+        "Мы предлагаем автоматическую проверку условий договора, выявляем потенциальные риски и предлагаем улучшения.
+
+"
+        "⚙️ Формат: Telegram-бот
+"
+        "📄 Поддержка форматов: PDF, DOCX
+"
+        "👨‍⚖️ С юридическим сопровождением по запросу
+
+"
+        "SafeRenta разработан как MVP для дальнейшей упаковки и перепродажи готового решения.",
+        reply_markup=main_keyboard
+    )
+    await callback.answer()
 
 # /start
 @dp.message(CommandStart())

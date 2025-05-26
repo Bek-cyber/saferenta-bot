@@ -19,12 +19,10 @@ logging.basicConfig(level=logging.INFO)
 
 # Токены
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "not_required")
 
 if not BOT_TOKEN:
     raise ValueError("Не указан BOT_TOKEN в переменных окружениях")
-if not DEEPSEEK_API_KEY:
-    raise ValueError("Не указан DEEPSEEK_API_KEY в переменных окружениях")
 
 # Инициализация
 bot = Bot(token=BOT_TOKEN)

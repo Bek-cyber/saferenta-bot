@@ -145,13 +145,13 @@ async def handle_document(message: Message):
         await message.answer("❌ Неподдерживаемый формат файла. Пожалуйста, загрузите PDF или DOCX.")
         return
 
-    await message.answer("📡 Выполняется анализ договора через DeepSeek AI...")
+    await message.answer("📡 Выполняется анализ договора через OpenAI AI...")
 
     try:
         result = analyze_with_deepseek(extracted_text)
     except Exception as e:
-        logging.exception("Ошибка при обращении к DeepSeek")
-        await message.answer("❌ Ошибка при анализе через DeepSeek. Попробуйте позже.")
+        logging.exception("Ошибка при обращении к OpenAI")
+        await message.answer("❌ Ошибка при анализе. Попробуйте позже.")
         return
 
     # Генерация PDF-отчёта

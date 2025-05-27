@@ -5,3 +5,4 @@ docx2txt
 pymupdf
 requests
 python-dotenv
+openai

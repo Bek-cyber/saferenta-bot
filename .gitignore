@@ -15,3 +15,5 @@ temp/
 
 # macOS system files
 .DS_Store
+
+texts/prompt.txt
